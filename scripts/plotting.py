@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 # A function for plotting the Kp index over a specified date range. 
@@ -61,3 +62,82 @@ def plot_kp_index_by_date_range(kpindex_data, start_date=None, end_date=None):
 
     # Show the plot
     plt.show()
+
+
+def plot_prediction_intervals(
+    y,
+    p,
+    col="mean",
+    coverage="95%",
+    valid=None,
+    xlabel=None,
+    ylabel=None,
+    width=700,
+    height=400,
+):
+    """
+    y = series
+    p = prediction dataframe from statsmodels .summary_frame() method
+    """
+    if xlabel is None:
+        xlabel = y.index.name
+
+    if ylabel is None:
+        ylabel = y.name
+
+    if "pi_lower" not in p.columns:
+        pilabel = "mean_ci"
+    else:
+        pilabel = "pi"
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=y.index, y=y, mode="lines", name="Observed"))
+    if valid is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=valid.index,
+                y=valid,
+                mode="lines",
+                line=dict(color="#00CC96"),
+                name="Validation",
+            )
+        )
+    fig.add_trace(
+        go.Scatter(
+            x=p.index,
+            y=p[col],
+            mode="lines",
+            line=dict(color="salmon"),
+            name=f"{col.title()} predicted",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=p.index,
+            y=p[f"{pilabel}_lower"],
+            mode="lines",
+            line=dict(width=0.5, color="salmon"),
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=p.index,
+            y=p[f"{pilabel}_upper"],
+            mode="lines",
+            line=dict(width=0.5, color="salmon"),
+            fillcolor="rgba(250, 128, 114, 0.2)",
+            fill="tonexty",
+            name=f"{coverage} confidence interval",
+        )
+    )
+    fig.update_xaxes(title=xlabel, title_standoff=0)
+    fig.update_yaxes(title=ylabel, title_standoff=0)
+    fig.update_layout(
+        width=width,
+        height=height,
+        title_x=0.5,
+        title_y=0.93,
+        margin=dict(t=60, b=10),
+    )
+    return fig
